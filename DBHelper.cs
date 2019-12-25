@@ -25,7 +25,7 @@ namespace SBS
         /// <summary>
         /// 超时时间
         /// </summary>
-        private const int CommandTimeOut = 600;
+        private const int CommandTimeOut = 3600;
 
 
         /// <summary>
@@ -792,7 +792,8 @@ namespace SBS
                 sqlCommand.CommandType = CommandType.StoredProcedure;
                 sqlCommand.Connection = myConn;
                 sqlCommand.Parameters.Clear();
-                sqlCommand.Parameters.AddRange(commandParameters);
+                if(commandParameters.Length>0)
+                    sqlCommand.Parameters.AddRange(commandParameters);
 
 
                 //创建 DataAdapter 和 DataSet
@@ -801,7 +802,7 @@ namespace SBS
                 try
                 {
                     da.Fill(ds);
-                    var xx = sqlCommand.Parameters[3].Value;
+                    //var xx = sqlCommand.Parameters[3].Value;
                     sqlCommand.Parameters.Clear();
                     //返回结果集
                     return ds;

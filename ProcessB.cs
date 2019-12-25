@@ -14,73 +14,70 @@ namespace SBS
     {
         public void SyncGroups()
         {
-            var ls = DAL.GetBOMTable(@"select * from dbo.bom_bom with(nolock) where [物料单-项目] IN (
-                            select[物料单-项目] from dbo.bom_bom with(nolock) group by [物料单-项目] having count(1) > 1
+            int c = 0;
+            Console.WriteLine("Get top 1 from db order by group_id desc\n");
+            var exbom = DAL.GetBom("AND GROUP_ID>0 ORDER BY group_id DESC");
+            if (exbom != null)
+            {
+                Logger.CreateLog("已获得之前最大的组号：" + exbom.GroupId);
+                Console.WriteLine($"There already exists the data with group_id, now begin to add.\n");
+                Console.WriteLine("Begin to sync group id with part_no\n");
+                //已经有分组存在，得走追加模式
+                c = DBHelper.ExecuteNonQuery("update a set a.group_id=b.group_id from bom_bom a inner join bom_bom b on a.[零件]=b.[零件] where a.group_id is null and b.group_id is not null;");
+                Logger.CreateLog("根据已有组号的零件同步组号，共同步" + c + "条记录");
+                Console.WriteLine("Begin to sync group id with item no\n");
+                c = DBHelper.ExecuteNonQuery("update a set a.group_id=b.group_id from bom_bom a inner join bom_bom b on a.[物料单-项目]=b.[物料单-项目] where a.group_id is null and b.group_id is not null;");
+                Logger.CreateLog("根据已有组号的物料单号同步组号，共同步" + c + "条记录");
+                Console.WriteLine("Now, begin to init the group id left.\n");
+                this.InitGroup(exbom.GroupId.Value);
+            }
+            else
+            {
+                Console.WriteLine($"There is none data yet, begin to init group id.\n");
+                InitGroup();
+            }
+        }
+        private void InitGroup(int g = 0)
+        {
+            Logger.CreateLog("开始从上次组号" + g + "重新组织数据组号");
+            var ls = DAL.GetBOMTable(@"select * from dbo.bom_bom with(nolock) where group_id is null and [物料单-项目] IN (
+                            select[物料单-项目] from dbo.bom_bom with(nolock) where group_id is null group by [物料单-项目] having count(1) > 1
                         )", null);
-
-            //var fs = ls.Where(p => p.Seq == 1).ToList();
-            //List<RelationModel> list = new List<RelationModel>();
-            int group = 0, i = 0;
+            Logger.CreateLog("重新组织的数据量行数：" + ls.Count);
+            int group = g, i = 0;
             foreach (var item in ls)
-            { 
-                if(item.GroupId.HasValue)
+            {
+                if (item.GroupId.HasValue)
                 {
                     continue;
                 }
-                int deep = 0;
                 group++;
-                //item.group = group;
-                Console.Write($"StartNewGroup={group}\t");
-                Cal(new List<BOMModel> { item }, ref ls, ref group, ref i, ref deep);
+                Console.Write($"StartNewGroup={group}\n");
+                Cal(new List<BOMModel> { item }, ref ls, ref group, ref i);
                 var ds = ls.Where(p => p.GroupId == group).ToList();
                 DAL.SetGroupBatch(ds, group);
             }
+
+            int c = DAL.ProcessPartSignleGroup();
+            Logger.CreateLog("已完成存储过程同步剩余未处理的数据行数：" + c);
+
+            DateTime? mt = ls.Max(p => p.CreateTime);
+            if (mt.HasValue)
+            {
+                Logger.WriteDT(mt.Value.ToString("yyyy-MM-dd HH:mm:ss:fff"));
+            }
         }
 
-        public void Cal(List<BOMModel> ms, ref List<BOMModel> ls, ref int group, ref int i, ref int deep)
+        public void Cal(List<BOMModel> ms, ref List<BOMModel> ls, ref int group, ref int i)
         {
             DateTime n = DateTime.Now;
-            //foreach (var item in ls)
-            //{
-            //if (item.group.HasValue)// (deep > 10)//
-            //{
-            //    return;
-            //}
-            //else
-            //{
-                deep++;
-            //}
-            //item.group = group;
-            //DAL.SetGroup(item, group);
-            //i++;
+            
             var d1 = ms.Select(p => p.ItemNo).ToList();
             var d2 = ms.Select(p => p.PartNo).ToList();
-            Console.Write($"SetGroup2-{i}={group}\t");
-            //var subs = ls.Where(p => (p.PartNo == item.PartNo || p.ItemNo == item.ItemNo) && !p.group.HasValue).ToList();
-            //var subs = ls.Where(p => (d1.Contains(p.ItemNo) || d2.Contains(p.PartNo)) && !p.group.HasValue).ToList();
-            //var subs1 = (from a in ls
-            //             join b in d1 on a.ItemNo equals b into b1
-            //             from bb in b1.DefaultIfEmpty()
-            //             join c in d2 on a.PartNo equals c into c1
-            //             from cc in c1.DefaultIfEmpty()
-            //             where !a.GroupId.HasValue && (bb != null || cc != null)
-            //             select a).ToList();
-            //var subs = (from a in ls
-            //            //where !a.GroupId.HasValue && d1.Contains(a.ItemNo)
-            //            from d in d1 where !a.GroupId.HasValue && a.ItemNo == d
-            //            select a).Union(
-            //            from a in ls
-            //                //join b in d2 on a.PartNo equals b into b1
-            //                //where !a.GroupId.HasValue && d2.Contains(a.PartNo)
-            //            from d in d2
-            //            where !a.GroupId.HasValue && a.PartNo == d
-            //            select a
-            //            ).ToList();
+            Console.Write($"SetGroup{group}-{i}\n");
+            
             var subs = ls.Where(p => !p.GroupId.HasValue && (d1.Contains(p.ItemNo) || d2.Contains(p.PartNo))).ToList();
-            Console.WriteLine("遍历耗时："+(DateTime.Now - n).TotalSeconds.ToString());
-
-            //并循环 - Parallel.For(0, _files.Count(), i => { });
-            //安全类型 -private static ConcurrentDictionary<string, string> RouteStrCD;
+            Console.WriteLine($"\tQuery item from items:{String.Join(",", d1)}; parts:{String.Join(",", d2)} duration(sec):{(DateTime.Now - n).TotalSeconds.ToString()}\t");
 
             if (subs.Count > 0)
             {
@@ -91,23 +88,17 @@ namespace SBS
                         continue;
                     }
                     sb.GroupId = group;
-                    //DAL.SetGroup(sb, group);
                     i++;
-                    //sb.group = group;
+                    Console.WriteLine($"To set item {sb.ItemNo},{sb.PartNo} group_id to {group}\t");
                 }
-                Console.Write($"SetGroup-{deep}-{i}={group}\t");
-                Cal(subs, ref ls, ref group, ref i, ref deep);
+                Console.Write($"Begin a new recursion{group}-{i}\t");
+                Cal(subs, ref ls, ref group, ref i);
             }
             else
             {
-                //group++;
-                //Console.WriteLine("\nNew Group========" + group);
-                //break;
                 subs = new List<BOMModel>();
-                deep = 0;
                 return;
             }
-            //}
         }
     }
 }

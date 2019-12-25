@@ -41,6 +41,8 @@ namespace SBS
                     PartNo = Convert.ToString(dr["零件"]),
                     ValidStartDate = Convert.ToString(dr["有效起始日"]),
                     Seq = Convert.ToInt32(dr["变更顺序"]),
+                    CreateTime = Convert.ToDateTime(dr["变更顺序生成时间"]),
+                    GroupId = dr["group_id"] != DBNull.Value ? Convert.ToInt32(dr["group_id"]) : -1,
                 });
             }
 
@@ -58,6 +60,8 @@ namespace SBS
                     PartNo = Convert.ToString(dr["零件"]),
                     ValidStartDate = Convert.ToString(dr["有效起始日"]),
                     Seq = Convert.ToInt32(dr["变更顺序"]),
+                    CreateTime = Convert.ToDateTime(dr["变更顺序生成时间"]),
+                    GroupId = dr["group_id"] != DBNull.Value ? Convert.ToInt32(dr["group_id"]) : -1,
                 };
             }
             else
@@ -65,5 +69,12 @@ namespace SBS
                 return null;
             }
         }
+
+        public static int ProcessPartSignleGroup()
+        {
+            var ds = DBHelper.RunProcedure("dbo.PROC_ProcessPartSignleGroup", new System.Data.SqlClient.SqlParameter[] { });
+            return Convert.ToInt32(ds.Tables[0].Rows[0][0]);
+        }
+
     }
 }

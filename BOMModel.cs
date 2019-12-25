@@ -25,5 +25,6 @@ namespace SBS
         public int Seq { get; set; }
 
         public int? GroupId { get; set; }
+        public DateTime? CreateTime { get; set; }
     }
 }

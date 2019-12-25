@@ -48,6 +48,7 @@
     <Compile Include="BOMModel.cs" />
     <Compile Include="DAL.cs" />
     <Compile Include="GroupProcess.cs" />
+    <Compile Include="Helper\Logger.cs" />
     <Compile Include="ProcessB.cs" />
     <Compile Include="Process.cs" />
     <Compile Include="Program.cs" />
