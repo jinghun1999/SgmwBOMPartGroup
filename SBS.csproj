@@ -46,6 +46,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BOMModel.cs" />
+    <Compile Include="Helper\ConvertUtility.cs" />
     <Compile Include="DAL.cs" />
     <Compile Include="GroupProcess.cs" />
     <Compile Include="Helper\Logger.cs" />

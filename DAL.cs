@@ -11,14 +11,14 @@ namespace SBS
     {
         public static void SetGroup(BOMModel b, int group)
         {
-            DBHelper.ExecuteNonQuery($"UPDATE BOM_BOM SET GROUP_ID={group} WHERE [物料单-项目]='{b.ItemNo}' AND [零件]='{b.PartNo}'", null);
+            DBHelper.ExecuteNonQuery($"UPDATE dbo.[Pur_BOM_BOM] SET GROUP_ID={group} WHERE [BOMNo-ProjectID]='{b.ItemNo}' AND [PartNo]='{b.PartNo}'", null);
         }
         public static void SetGroupBatch(List<BOMModel> bs, int group)
         {
             StringBuilder sb = new StringBuilder();
             foreach (var b in bs)
             {
-                sb.AppendLine($"UPDATE BOM_BOM SET GROUP_ID={group} WHERE [物料单-项目]='{b.ItemNo}' AND [零件]='{b.PartNo}';");
+                sb.AppendLine($"UPDATE dbo.[Pur_BOM_BOM] SET GROUP_ID={group} WHERE [BOMNo-ProjectID]='{b.ItemNo}' AND [PartNo]='{b.PartNo}';");
             }
             if (sb.Length > 0)
                 DBHelper.ExecuteNonQuery(sb.ToString(), null);
@@ -27,7 +27,7 @@ namespace SBS
         {
             if (string.IsNullOrEmpty(sql))
             {
-                sql = "SELECT TOP (5000000) * FROM dbo.BOM_BOM WITH(NOLOCK) ";
+                sql = "SELECT TOP (5000000) * FROM dbo.[Pur_BOM_BOM] WITH(NOLOCK) ";
             }
             DataTable dt = DBHelper.ExecuteDataTable(sql + where, null);
 
@@ -36,13 +36,13 @@ namespace SBS
             {
                 list.Add(new BOMModel()
                 {
-                    ItemNo = Convert.ToString(dr["物料单-项目"]),
-                    NodeTicks = Convert.ToString(dr["节点-计数器"]),
-                    PartNo = Convert.ToString(dr["零件"]),
-                    ValidStartDate = Convert.ToString(dr["有效起始日"]),
-                    Seq = Convert.ToInt32(dr["变更顺序"]),
-                    CreateTime = Convert.ToDateTime(dr["变更顺序生成时间"]),
-                    GroupId = dr["group_id"] != DBNull.Value ? Convert.ToInt32(dr["group_id"]) : -1,
+                    ItemNo = Convert.ToString(dr["BOMNo-ProjectID"]),
+                    //NodeTicks = Convert.ToString(dr["节点-计数器"]),
+                    PartNo = Convert.ToString(dr["PartNo"]),
+                    ValidStartDate = Convert.ToString(dr["StartDate"]),
+                    Seq = Convert.ToInt32(dr["SeqID"]),
+                    CreateTime = Convert.ToDateTime(dr["SeqTime"]),
+                    GroupId = ConvertUtility.ToInt32(dr["group_id"]),
                 });
             }
 
@@ -50,18 +50,18 @@ namespace SBS
         }
         public static BOMModel GetBom(string where)
         {
-            var dr = DBHelper.ExecuteDataRow("SELECT TOP 1 * FROM dbo.BOM_BOM WITH(NOLOCK) WHERE 1=1 " + where, null);
+            var dr = DBHelper.ExecuteDataRow("SELECT TOP 1 * FROM dbo.[Pur_BOM_BOM] WITH(NOLOCK) WHERE 1=1 " + where, null);
             if (dr != null)
             {
                 return new BOMModel()
                 {
-                    ItemNo = Convert.ToString(dr["物料单-项目"]),
-                    NodeTicks = Convert.ToString(dr["节点-计数器"]),
-                    PartNo = Convert.ToString(dr["零件"]),
-                    ValidStartDate = Convert.ToString(dr["有效起始日"]),
-                    Seq = Convert.ToInt32(dr["变更顺序"]),
-                    CreateTime = Convert.ToDateTime(dr["变更顺序生成时间"]),
-                    GroupId = dr["group_id"] != DBNull.Value ? Convert.ToInt32(dr["group_id"]) : -1,
+                    ItemNo = Convert.ToString(dr["BOMNo-ProjectID"]),
+                    //NodeTicks = Convert.ToString(dr["节点-计数器"]),
+                    PartNo = Convert.ToString(dr["PartNo"]),
+                    ValidStartDate = Convert.ToString(dr["StartDate"]),
+                    Seq = Convert.ToInt32(dr["SeqID"]),
+                    CreateTime = Convert.ToDateTime(dr["SeqTime"]),
+                    GroupId = ConvertUtility.ToInt32(dr["group_id"]),
                 };
             }
             else

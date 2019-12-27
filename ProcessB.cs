@@ -23,13 +23,17 @@ namespace SBS
                 Console.WriteLine($"There already exists the data with group_id, now begin to add.\n");
                 Console.WriteLine("Begin to sync group id with part_no\n");
                 //已经有分组存在，得走追加模式
-                c = DBHelper.ExecuteNonQuery("update a set a.group_id=b.group_id from bom_bom a inner join bom_bom b on a.[零件]=b.[零件] where a.group_id is null and b.group_id is not null;");
+                c = DBHelper.ExecuteNonQuery("update a set a.group_id=b.group_id from dbo.[Pur_BOM_BOM] a inner join dbo.[Pur_BOM_BOM] b on a.[PartNo]=b.[PartNo] where a.group_id is null and b.group_id is not null;");
                 Logger.CreateLog("根据已有组号的零件同步组号，共同步" + c + "条记录");
                 Console.WriteLine("Begin to sync group id with item no\n");
-                c = DBHelper.ExecuteNonQuery("update a set a.group_id=b.group_id from bom_bom a inner join bom_bom b on a.[物料单-项目]=b.[物料单-项目] where a.group_id is null and b.group_id is not null;");
+                c = DBHelper.ExecuteNonQuery("update a set a.group_id=b.group_id from dbo.[Pur_BOM_BOM] a inner join dbo.[Pur_BOM_BOM] b on a.[BOMNo-ProjectID]=b.[BOMNo-ProjectID] where a.group_id is null and b.group_id is not null;");
                 Logger.CreateLog("根据已有组号的物料单号同步组号，共同步" + c + "条记录");
                 Console.WriteLine("Now, begin to init the group id left.\n");
                 this.InitGroup(exbom.GroupId.Value);
+
+
+                c = DBHelper.ExecuteNonQuery("update a set a.group_id=b.group_id from dbo.[Pur_BOM_BOM] a inner join dbo.[Pur_BOM_BOM] b on a.[PartNo]=b.[PartNo] where a.group_id is null and b.group_id is not null;");
+                Logger.CreateLog("再次根据已有组号的零件同步组号，共同步" + c + "条记录");
             }
             else
             {
@@ -40,8 +44,8 @@ namespace SBS
         private void InitGroup(int g = 0)
         {
             Logger.CreateLog("开始从上次组号" + g + "重新组织数据组号");
-            var ls = DAL.GetBOMTable(@"select * from dbo.bom_bom with(nolock) where group_id is null and [物料单-项目] IN (
-                            select[物料单-项目] from dbo.bom_bom with(nolock) where group_id is null group by [物料单-项目] having count(1) > 1
+            var ls = DAL.GetBOMTable(@"select * from dbo.[Pur_BOM_BOM] with(nolock) where group_id is null and [BOMNo-ProjectID] IN (
+                            select[BOMNo-ProjectID] from dbo.[Pur_BOM_BOM] with(nolock) where group_id is null group by [BOMNo-ProjectID] having count(1) > 1
                         )", null);
             Logger.CreateLog("重新组织的数据量行数：" + ls.Count);
             int group = g, i = 0;
@@ -61,11 +65,11 @@ namespace SBS
             int c = DAL.ProcessPartSignleGroup();
             Logger.CreateLog("已完成存储过程同步剩余未处理的数据行数：" + c);
 
-            DateTime? mt = ls.Max(p => p.CreateTime);
-            if (mt.HasValue)
-            {
-                Logger.WriteDT(mt.Value.ToString("yyyy-MM-dd HH:mm:ss:fff"));
-            }
+            //DateTime? mt = ls.Max(p => p.CreateTime);
+            //if (mt.HasValue)
+            //{
+            //    Logger.WriteDT(mt.Value.ToString("yyyy-MM-dd HH:mm:ss:fff"));
+            //}
         }
 
         public void Cal(List<BOMModel> ms, ref List<BOMModel> ls, ref int group, ref int i)

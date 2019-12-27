@@ -788,6 +788,7 @@ namespace SBS
             {
                 //创建一个命令
                 var sqlCommand = new SqlCommand();
+                sqlCommand.CommandTimeout = CommandTimeOut;
                 sqlCommand.CommandText = commandText;
                 sqlCommand.CommandType = CommandType.StoredProcedure;
                 sqlCommand.Connection = myConn;
