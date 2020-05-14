@@ -1,0 +1,2 @@
+# SgmwBOMPartGroup
+上汽通用五菱BOM裂变后的零件分组计算问题
